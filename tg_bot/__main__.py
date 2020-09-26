@@ -156,17 +156,17 @@ def start(bot: Bot, update: Update, args: List[str]):
 
 
 # 시험용
-def error_callback(bot, update, error):
+def error_callback(bot, update, error   update, context):
     try:
         raise error
     except Unauthorized:
         print("no nono1")
-        print(error)
+        print(context.error)
         # 대화 목록에서 update.message.chat_id 제거
     except BadRequest:
         print("no nono2")
         print("BadRequest caught")
-        print(error)
+        print(context.error)
 
         # 잘못된 요청 처리. 다시 읽고 와
     except TimedOut:
@@ -180,7 +180,7 @@ def error_callback(bot, update, error):
         print(err)
         # 그룹의 chat_id가 변경되었습니다. e.new_chat_id를 사용하세요.
     except TelegramError:
-        print(error)
+        print(context.error)
         # telegram 관련 오류 처리
 
 
