@@ -3,7 +3,7 @@ import re
 
 from feedparser import parse
 from telegram import ParseMode, constants
-from telegram.ext import CommandHandler
+from telegram.ext import CommandHandler, JobQueue
 
 from tg_bot import dispatcher, updater
 from tg_bot.modules.helper_funcs.chat_status import user_admin
@@ -226,7 +226,7 @@ __help__ = """
 
 __mod_name__ = "RSS 피드"
 
-job = updater.job_queue
+job = updater.JobQueue
 
 job_rss_set = job.run_once(rss_set, 5)
 job_rss_update = job.run_repeating(rss_update, interval=60, first=60)
