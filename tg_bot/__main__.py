@@ -384,7 +384,7 @@ def donate(bot: Bot, update: Update):
 
         if OWNER_ID != 254318997 and DONATION_LINK:
             update.effective_message.reply_text("당신은 지금 저를 운영하는 사람에게 기부할 수 있어요."
-                                                "[here]({})".format(DONATION_LINK),
+                                                "[여기]({})를 누르세요!".format(DONATION_LINK),
                                                 parse_mode=ParseMode.MARKDOWN)
 
     else:
@@ -491,8 +491,7 @@ def process_update(self, update):
     for group in self.groups:
         try:
             for handler in (x for x in self.handlers[group] if x.check_update(update)):
-                ConversationHandler.handle_update(update, self)
-                #handler.handle_update(update, self)
+                handler.handle_update(update, self)
                 break
 
         # 다른 헨들러와 처리를 중단.
