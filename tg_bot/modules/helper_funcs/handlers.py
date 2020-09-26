@@ -33,6 +33,6 @@ class CustomCommandHandler(tg.CommandHandler):
             return False
 
 
-class CustomRegexHandler(tg.RegexHandler):
+class CustomRegexHandler(tg.RegexHandler, tg.Filters):
     def __init__(self, pattern, callback, friendly="", **kwargs):
         super().__init__(Filters.regex('pattern'), callback, **kwargs)
