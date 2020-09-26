@@ -226,7 +226,7 @@ __help__ = """
 
 __mod_name__ = "RSS 피드"
 
-job = updater.JobQueue
+job = updater.JobQueue_queue
 
 job_rss_set = job.run_once(rss_set, 5)
 job_rss_update = job.run_repeating(rss_update, interval=60, first=60)
