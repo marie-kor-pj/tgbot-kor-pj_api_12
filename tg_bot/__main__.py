@@ -156,7 +156,7 @@ def start(bot: Bot, update: Update, args: List[str]):
 
 
 # 시험용
-def error_callback(bot, update, error   update, context):
+def error_callback(update, context):
     try:
         raise error
     except Unauthorized:
