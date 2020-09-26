@@ -1,4 +1,4 @@
-vimport telegram.ext as tg
+import telegram.ext as tg
 from telegram import Update
 
 CMD_STARTERS = ('/', '!')
@@ -33,6 +33,6 @@ class CustomCommandHandler(tg.CommandHandler):
             return False
 
 
-class CustomRegexHandler(tg.RegexHandler):
+class CustomRegexHandler(tg.MessageHandler):
     def __init__(self, pattern, callback, friendly="", **kwargs):
         super().__init__(tg.Filters.regex('pattern') , callback, **kwargs)
