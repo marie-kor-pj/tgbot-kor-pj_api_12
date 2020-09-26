@@ -9,7 +9,7 @@
 
 ## Heroku Deploy
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/marie-kor-pj/tgbot-kor-pj)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/marie-kor-pj/tgbot-kor-pj_api_12)
 
 ## Credit
 
