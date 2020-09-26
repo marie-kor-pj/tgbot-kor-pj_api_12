@@ -6,7 +6,7 @@ from typing import Optional, List
 from telegram import Message, Chat, Update, Bot, User
 from telegram import ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.error import Unauthorized, BadRequest, TimedOut, NetworkError, ChatMigrated, TelegramError
-from telegram.ext import CommandHandler, Filters, MessageHandler, CallbackQueryHandler
+from telegram.ext import CommandHandler, Filters, MessageHandler, CallbackQueryHandler, ConversationHandler
 from telegram.ext.dispatcher import run_async, DispatcherHandlerStop, Dispatcher
 from telegram.utils.helpers import escape_markdown
 
@@ -491,7 +491,8 @@ def process_update(self, update):
     for group in self.groups:
         try:
             for handler in (x for x in self.handlers[group] if x.check_update(update)):
-                handler.handle_update(update, self)
+                ConversationHandler.handle_update(update, self)
+                #handler.handle_update(update, self)
                 break
 
         # 다른 헨들러와 처리를 중단.
