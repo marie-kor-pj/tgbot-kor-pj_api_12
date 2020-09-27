@@ -4,8 +4,8 @@ from telegram import Update
 CMD_STARTERS = ('/', '!')
 
 
-class CustomCommandHandler(tg.MessageHandler):
-    def __init__(self, command, callback, **kwargs):
+class CustomCommandHandler(tg.PrefixHandler):
+    def __init__(self, command, tg.PrefixHandler.callback, **kwargs):
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
         super().__init__(command, callback, **kwargs)
