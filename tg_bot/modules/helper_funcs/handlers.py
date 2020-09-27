@@ -5,7 +5,7 @@ CMD_STARTERS = ('/', '!')
 
 
 class CustomCommandHandler(tg.PrefixHandler):
-    def __init__(self, command, tg.PrefixHandler.callback, **kwargs):
+    def __init__(self, command, callback, **kwargs):
         if "admin_ok" in kwargs:
             del kwargs["admin_ok"]
         super().__init__(command, callback, **kwargs)
