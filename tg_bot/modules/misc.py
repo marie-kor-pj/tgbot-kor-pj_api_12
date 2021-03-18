@@ -7,7 +7,7 @@ from typing import Optional, List
 import requests
 from telegram import Message, Chat, Update, Bot, MessageEntity
 from telegram import ParseMode
-from telegram.ext import CommandHandler, run_async, Filters
+from telegram.ext import CommandHandler, run_async, Filters, CallbackContext
 from telegram.utils.helpers import escape_markdown, mention_html
 
 from tg_bot import dispatcher, OWNER_ID, SUDO_USERS, SUPPORT_USERS, WHITELIST_USERS, BAN_STICKER
@@ -135,13 +135,14 @@ GMAPS_TIME = "https://maps.googleapis.com/maps/api/timezone/json"
 
 
 @run_async
-def runs(bot: Bot, update: Update):
+def runs(update: Update, context):
     update.effective_message.reply_text(random.choice(RUN_STRINGS))
 
 
 @run_async
-def slap(bot: Bot, update: Update, args: List[str]):
+def slap(update: Update, context: CallbackContext):
     msg = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     # 올바른 메시지에 답장
     reply_text = msg.reply_to_message.reply_text if msg.reply_to_message else msg.reply_text
@@ -154,7 +155,7 @@ def slap(bot: Bot, update: Update, args: List[str]):
 
     user_id = extract_user(update.effective_message, args)
     if user_id:
-        slapped_user = bot.get_chat(user_id)
+        slapped_user = context.bot.get_chat(user_id)
         user1 = curr_user
         if slapped_user.username:
             user2 = "@" + escape_markdown(slapped_user.username)
@@ -164,7 +165,7 @@ def slap(bot: Bot, update: Update, args: List[str]):
 
     # 대상을 찾을 수 없는 경우 봇은 보낸 사람을 대상으로 한다
     else:
-        user1 = "[{}](tg://user?id={})".format(bot.first_name, bot.id)
+        user1 = "[{}](tg://user?id={})".format(context.bot.first_name, context.bot.id)
         user2 = curr_user
 
     temp = random.choice(SLAP_TEMPLATES)
@@ -178,7 +179,7 @@ def slap(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def get_bot_ip(bot: Bot, update: Update):
+def get_bot_ip(update: Update, context):
     """ 필요한 경우 SSH 접속을 하기 위해서 봇의 IP주소를 보낸다.
         봇 주인만 .
     """
@@ -187,7 +188,8 @@ def get_bot_ip(bot: Bot, update: Update):
 
 
 @run_async
-def get_id(bot: Bot, update: Update, args: List[str]):
+def get_id(update: Update, context: CallbackContext):
+    args = context.args
     user_id = extract_user(update.effective_message, args)
     if user_id:
         if update.effective_message.reply_to_message and update.effective_message.reply_to_message.forward_from:
@@ -201,7 +203,7 @@ def get_id(bot: Bot, update: Update, args: List[str]):
                     user1.id),
                 parse_mode=ParseMode.MARKDOWN)
         else:
-            user = bot.get_chat(user_id)
+            user = context.bot.get_chat(user_id)
             update.effective_message.reply_text("{}'의 ID는 `{}` 예요.".format(escape_markdown(user.first_name), user.id),
                                                 parse_mode=ParseMode.MARKDOWN)
     else:
@@ -216,12 +218,13 @@ def get_id(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def info(bot: Bot, update: Update, args: List[str]):
+def info(update: Update, args: List[str], context: CallbackContext):
+    args = context.args
     msg = update.effective_message  # type: Optional[Message]
     user_id = extract_user(update.effective_message, args)
 
     if user_id:
-        user = bot.get_chat(user_id)
+        user = context.bot.get_chat(user_id)
 
     elif not msg.reply_to_message and not args:
         user = msg.from_user
@@ -271,11 +274,12 @@ def info(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def get_time(bot: Bot, update: Update, args: List[str]):
+def get_time(update: Update, context: CallbackContext):
+    args = context.args
     location = " ".join(args)
-    if location.lower() == bot.first_name.lower():
+    if location.lower() == context.bot.first_name.lower():
         update.effective_message.reply_text("누군가를 Ban 하는 것은 저에게는 항상 즐거운 시간이에요!")
-        bot.send_sticker(update.effective_chat.id, BAN_STICKER)
+        context.bot.send_sticker(update.effective_chat.id, BAN_STICKER)
         return
 
     res = requests.get(GMAPS_LOC, params=dict(address=location))
@@ -313,7 +317,7 @@ def get_time(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def echo(bot: Bot, update: Update):
+def echo(update: Update, context: CallbackContext):
     args = update.effective_message.text.split(None, 1)
     message = update.effective_message
     if message.reply_to_message:
@@ -324,7 +328,7 @@ def echo(bot: Bot, update: Update):
 
 
 @run_async
-def gdpr(bot: Bot, update: Update):
+def gdpr(update: Update, context: CallbackContext):
     update.effective_message.reply_text("식별 가능한 데이터 삭제")
     for mod in GDPR:
         mod.__gdpr__(update.effective_user.id)

@@ -2,9 +2,9 @@ import html
 from io import BytesIO
 from typing import Optional, List
 
-from telegram import Message, Update, Bot, User, Chat, ParseMode
+from telegram import Message, Update, User, Chat, ParseMode
 from telegram.error import BadRequest, TelegramError
-from telegram.ext import run_async, CommandHandler, MessageHandler, Filters
+from telegram.ext import run_async, CommandHandler, MessageHandler, Filters, CallbackContext
 from telegram.utils.helpers import mention_html
 
 import tg_bot.modules.sql.global_bans_sql as sql
@@ -45,8 +45,9 @@ UNGBAN_ERRORS = {
 
 
 @run_async
-def gban(bot: Bot, update: Update, args: List[str]):
+def gban(update: Update, context: CallbackContext):
     message = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     user_id, reason = extract_user_and_text(message, args)
 
@@ -62,12 +63,12 @@ def gban(bot: Bot, update: Update, args: List[str]):
         message.reply_text("어머... 누군가가 SUPPORT 유저를 글로벌 밴하려고 하고 있네요!")
         return
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("-_- 저를 GBAN 하려고 한 거예요...? ㅠㅠ")
         return
 
     try:
-        user_chat = bot.get_chat(user_id)
+        user_chat = context.bot.get_chat(user_id)
     except BadRequest as excp:
         message.reply_text(excp.message)
         return
@@ -95,7 +96,7 @@ def gban(bot: Bot, update: Update, args: List[str]):
     message.reply_text("*GBAN 예정이에요! 안녕히가세요!* ;)")
 
     banner = update.effective_user  # type: Optional[User]
-    send_to_list(bot, SUDO_USERS + SUPPORT_USERS,
+    send_to_list(context.bot, SUDO_USERS + SUPPORT_USERS,
                  "{} is gbanning user {} "
                  "because:\n{}".format(mention_html(banner.id, banner.first_name),
                                        mention_html(user_chat.id, user_chat.first_name), reason or "No reason given"),
@@ -112,32 +113,33 @@ def gban(bot: Bot, update: Update, args: List[str]):
             continue
 
         try:
-            bot.kick_chat_member(chat_id, user_id)
+            context.bot.kick_chat_member(chat_id, user_id)
         except BadRequest as excp:
             if excp.message in GBAN_ERRORS:
                 pass
             else:
                 message.reply_text("다음 이유로 인해 GBAN 할 수 없어요 : {}".format(excp.message))
-                send_to_list(bot, SUDO_USERS + SUPPORT_USERS, "다음 이유로 인해 GBAN 할 수 없어요: {}".format(excp.message))
+                send_to_list(context.bot, SUDO_USERS + SUPPORT_USERS, "다음 이유로 인해 GBAN 할 수 없어요: {}".format(excp.message))
                 sql.ungban_user(user_id)
                 return
         except TelegramError:
             pass
 
-    send_to_list(bot, SUDO_USERS + SUPPORT_USERS, "GBAN 완료!")
+    send_to_list(context.bot, SUDO_USERS + SUPPORT_USERS, "GBAN 완료!")
     message.reply_text("그 사람은 GBAN 되었어요.")
 
 
 @run_async
-def ungban(bot: Bot, update: Update, args: List[str]):
+def ungban(update: Update, context: CallbackContext):
     message = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     user_id = extract_user(message, args)
     if not user_id:
         message.reply_text("사용자를 알려주세요!")
         return
 
-    user_chat = bot.get_chat(user_id)
+    user_chat = context.bot.get_chat(user_id)
     if user_chat.type != 'private':
         message.reply_text("사용자가 아니에요!")
         return
@@ -150,7 +152,7 @@ def ungban(bot: Bot, update: Update, args: List[str]):
 
     message.reply_text("제가 {} 님에게 글로벌 밴으로부터 기회를 한번 더 드릴게요.".format(user_chat.first_name))
 
-    send_to_list(bot, SUDO_USERS + SUPPORT_USERS,
+    send_to_list(context.bot, SUDO_USERS + SUPPORT_USERS,
                  "{} UNBAN 사용자. {}".format(mention_html(banner.id, banner.first_name),
                                                    mention_html(user_chat.id, user_chat.first_name)),
                  html=True)
@@ -164,29 +166,29 @@ def ungban(bot: Bot, update: Update, args: List[str]):
             continue
 
         try:
-            member = bot.get_chat_member(chat_id, user_id)
+            member = context.bot.get_chat_member(chat_id, user_id)
             if member.status == 'kicked':
-                bot.unban_chat_member(chat_id, user_id)
+                context.bot.unban_chat_member(chat_id, user_id)
 
         except BadRequest as excp:
             if excp.message in UNGBAN_ERRORS:
                 pass
             else:
                 message.reply_text("다음 이유로 인해 BAN 을 해제하실 수 없어요 : {}".format(excp.message))
-                bot.send_message(OWNER_ID, "다음 이유로 인해 BAN 을 해제하실 수 없어요 : {}".format(excp.message))
+                context.bot.send_message(OWNER_ID, "다음 이유로 인해 BAN 을 해제하실 수 없어요 : {}".format(excp.message))
                 return
         except TelegramError:
             pass
 
     sql.ungban_user(user_id)
 
-    send_to_list(bot, SUDO_USERS + SUPPORT_USERS, "un-gban 완료!")
+    send_to_list(context.bot, SUDO_USERS + SUPPORT_USERS, "un-gban 완료!")
 
     message.reply_text("글로벌 밴이 해제되었어요.")
 
 
 @run_async
-def gbanlist(bot: Bot, update: Update):
+def gbanlist(update: Update, context):
     banned_users = sql.get_gban_list()
 
     if not banned_users:
@@ -213,9 +215,9 @@ def check_and_ban(update, user_id, should_message=True):
 
 
 @run_async
-def enforce_gban(bot: Bot, update: Update):
+def enforce_gban(update: Update, context: CallbackContext):
     # Not using @restrict handler to avoid spamming - just ignore if cant gban.
-    if sql.does_chat_gban(update.effective_chat.id) and update.effective_chat.get_member(bot.id).can_restrict_members:
+    if sql.does_chat_gban(update.effective_chat.id) and update.effective_chat.get_member(context.bot.id).can_restrict_members:
         user = update.effective_user  # type: Optional[User]
         chat = update.effective_chat  # type: Optional[Chat]
         msg = update.effective_message  # type: Optional[Message]
@@ -236,7 +238,8 @@ def enforce_gban(bot: Bot, update: Update):
 
 @run_async
 @user_admin
-def gbanstat(bot: Bot, update: Update, args: List[str]):
+def gbanstat(update: Update, context: CallbackContext):
+    args = context.args
     if len(args) > 0:
         if args[0].lower() in ["on", "yes"]:
             sql.enable_gbans(update.effective_chat.id)

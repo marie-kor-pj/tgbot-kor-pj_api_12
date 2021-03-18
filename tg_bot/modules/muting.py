@@ -1,9 +1,9 @@
 import html
 from typing import Optional, List
 
-from telegram import Message, Chat, Update, Bot, User
+from telegram import Message, Chat, Update, Bot, User, ChatPermissions
 from telegram.error import BadRequest
-from telegram.ext import CommandHandler, Filters
+from telegram.ext import CommandHandler, Filters, CallbackContext
 from telegram.ext.dispatcher import run_async
 from telegram.utils.helpers import mention_html
 
@@ -18,17 +18,18 @@ from tg_bot.modules.log_channel import loggable
 @bot_admin
 @user_admin
 @loggable
-def mute(bot: Bot, update: Update, args: List[str]) -> str:
+def mute(update: Update, context: CallbackContext) -> str:
+    args = context.args
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
 
     user_id = extract_user(message, args)
-    if not user_id:
+    if not user_id or user_id == "error":
         message.reply_text("음소거를 할 사용자 id를 주거나, 또는 음소거할 사용자를 답장으로 알려주세요.")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("전 제 자신을 음소거할 수 없어요!")
         return ""
 
@@ -39,7 +40,7 @@ def mute(bot: Bot, update: Update, args: List[str]) -> str:
             message.reply_text("두렵게도 전 관리자가 말을 하는 것을 막을 수 없어요!")
 
         elif member.can_send_messages is None or member.can_send_messages:
-            bot.restrict_chat_member(chat.id, user_id, can_send_messages=False)
+            context.bot.restrict_chat_member(chat.id, user_id, permissions=ChatPermissions(can_send_messages=False))
             message.reply_text("음소거되었습니다!")
             return "<b>{}:</b>" \
                    "\n#음소거" \
@@ -60,13 +61,14 @@ def mute(bot: Bot, update: Update, args: List[str]) -> str:
 @bot_admin
 @user_admin
 @loggable
-def unmute(bot: Bot, update: Update, args: List[str]) -> str:
+def unmute(update: Update, context: CallbackContext) -> str:
+    args = context.args
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
 
     user_id = extract_user(message, args)
-    if not user_id:
+    if not user_id or user_id == "error":
         message.reply_text("음소거를 해제하려면 사용자 이름을 알려주거나 답장으로 알려주세요.")
         return ""
 
@@ -83,11 +85,13 @@ def unmute(bot: Bot, update: Update, args: List[str]) -> str:
                 message.reply_text("이 사용자는 이미 발언권을 가지고 있어요!")
                 return ""
             else:
-                bot.restrict_chat_member(chat.id, int(user_id),
+                context.bot.restrict_chat_member(chat.id, int(user_id),
+                                        permissions=ChatPermissions(
                                          can_send_messages=True,
                                          can_send_media_messages=True,
                                          can_send_other_messages=True,
                                          can_add_web_page_previews=True)
+                                        )
                 message.reply_text("음소거가 해제되었어요!")
                 return "<b>{}:</b>" \
                        "\n#음소거 해제" \
@@ -107,7 +111,8 @@ def unmute(bot: Bot, update: Update, args: List[str]) -> str:
 @can_restrict
 @user_admin
 @loggable
-def temp_mute(bot: Bot, update: Update, args: List[str]) -> str:
+def temp_mute(update: Update, context: CallbackContext) -> str:
+    args = context.args
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
@@ -131,7 +136,7 @@ def temp_mute(bot: Bot, update: Update, args: List[str]) -> str:
         message.reply_text("관리자는 음소거할 수 없어요")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("전 제 자신을 음소거할 수 없어요")
         return ""
 
@@ -163,7 +168,7 @@ def temp_mute(bot: Bot, update: Update, args: List[str]) -> str:
 
     try:
         if member.can_send_messages is None or member.can_send_messages:
-            bot.restrict_chat_member(chat.id, user_id, until_date=mutetime, can_send_messages=False)
+            context.bot.restrict_chat_member(chat.id, user_id, until_date=mutetime, permissions=ChatPermissions(can_send_messages=False))
             message.reply_text("{} 동안 음소거!".format(time_val))
             return log
         else:

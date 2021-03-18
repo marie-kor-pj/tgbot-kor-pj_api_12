@@ -1,9 +1,9 @@
 import html
 from typing import Optional, List
 
-from telegram import Message, Chat, Update, Bot, User
+from telegram import Message, Chat, Update, User
 from telegram.error import BadRequest
-from telegram.ext import run_async, CommandHandler, Filters
+from telegram.ext import run_async, CommandHandler, Filters, CallbackContext
 from telegram.utils.helpers import mention_html
 
 from tg_bot import dispatcher, BAN_STICKER, LOGGER
@@ -20,10 +20,11 @@ from tg_bot.modules.log_channel import loggable
 @can_restrict
 @user_admin
 @loggable
-def ban(bot: Bot, update: Update, args: List[str]) -> str:
+def ban(update: Update, context: CallbackContext) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     user_id, reason = extract_user_and_text(message, args)
 
@@ -37,14 +38,13 @@ def ban(bot: Bot, update: Update, args: List[str]) -> str:
         if excp.message == "User not found":
             message.reply_text("해당 유저를 찾을 수 없어요!")
             return ""
-        else:
-            raise
+        raise
 
     if is_user_ban_protected(chat, user_id, member):
         message.reply_text("관리자는 Ban 할 수 없어요!")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("저는 절 Ban 할 수 없어요!")
         return ""
 
@@ -60,7 +60,7 @@ def ban(bot: Bot, update: Update, args: List[str]) -> str:
 
     try:
         chat.kick_member(user_id)
-        bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
+        context.bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         message.reply_text("넌 Ban 이야!")
         return log
 
@@ -69,11 +69,11 @@ def ban(bot: Bot, update: Update, args: List[str]) -> str:
             # Do not reply
             message.reply_text('넌 Ban 이야!', quote=False)
             return log
-        else:
-            LOGGER.warning(update)
-            LOGGER.exception("ERROR banning user %s in chat %s (%s) due to %s", user_id, chat.title, chat.id,
-                             excp.message)
-            message.reply_text("이런...! 전 그 사용자를 Ban 할 수 없어요!")
+        
+        LOGGER.warning(update)
+        LOGGER.exception("ERROR banning user %s in chat %s (%s) due to %s", user_id, chat.title, chat.id,
+                         excp.message)
+        message.reply_text("이런...! 전 그 사용자를 Ban 할 수 없어요!")
 
     return ""
 
@@ -83,10 +83,11 @@ def ban(bot: Bot, update: Update, args: List[str]) -> str:
 @can_restrict
 @user_admin
 @loggable
-def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
+def temp_ban(update: Update, context: CallbackContext) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     user_id, reason = extract_user_and_text(message, args)
 
@@ -100,14 +101,13 @@ def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
         if excp.message == "User not found":
             message.reply_text("해당 유저를 찾을 수 없어요!")
             return ""
-        else:
-            raise
+        raise
 
     if is_user_ban_protected(chat, user_id, member):
         message.reply_text("관리자는 Ban 할 수 없어요!")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("저는 절 Ban 할 수 없어요!")
         return ""
 
@@ -142,7 +142,7 @@ def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
 
     try:
         chat.kick_member(user_id, until_date=bantime)
-        bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
+        context.bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         message.reply_text("넌 {} 까지 Ban이야!".format(time_val))
         return log
 
@@ -151,11 +151,11 @@ def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
             # Do not reply
             message.reply_text("넌 {} 까지 Ban이야!".format(time_val), quote=False)
             return log
-        else:
-            LOGGER.warning(update)
-            LOGGER.exception("ERROR banning user %s in chat %s (%s) due to %s", user_id, chat.title, chat.id,
-                             excp.message)
-            message.reply_text("이런...! 전 그 사용자를 Ban할 수 없어요!")
+        
+        LOGGER.warning(update)
+        LOGGER.exception("ERROR banning user %s in chat %s (%s) due to %s", user_id, chat.title, chat.id,
+                         excp.message)
+        message.reply_text("이런...! 전 그 사용자를 Ban할 수 없어요!")
 
     return ""
 
@@ -165,10 +165,11 @@ def temp_ban(bot: Bot, update: Update, args: List[str]) -> str:
 @can_restrict
 @user_admin
 @loggable
-def kick(bot: Bot, update: Update, args: List[str]) -> str:
+def kick(update: Update, context: CallbackContext) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
+    args = context.args
 
     user_id, reason = extract_user_and_text(message, args)
 
@@ -181,20 +182,19 @@ def kick(bot: Bot, update: Update, args: List[str]) -> str:
         if excp.message == "User not found":
             message.reply_text("해당 유저를 찾을 수 없어요.")
             return ""
-        else:
-            raise
+        raise
 
     if is_user_ban_protected(chat, user_id):
         message.reply_text("관리자는 추방할 수 없어요!")
         return ""
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("그래요, 전 그렇게 하지 않을 거예요!")
         return ""
 
     res = chat.unban_member(user_id)  # unban on current user = kick
     if res:
-        bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
+        context.bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         message.reply_text("넌 추방이야!")
         log = "<b>{}:</b>" \
               "\n#추방" \
@@ -208,8 +208,7 @@ def kick(bot: Bot, update: Update, args: List[str]) -> str:
 
         return log
 
-    else:
-        message.reply_text("이런...! 전 사용자를 추방할 수 없어요!")
+    message.reply_text("이런...! 전 사용자를 추방할 수 없어요!")
 
     return ""
 
@@ -217,7 +216,7 @@ def kick(bot: Bot, update: Update, args: List[str]) -> str:
 @run_async
 @bot_admin
 @can_restrict
-def kickme(bot: Bot, update: Update):
+def kickme(update: Update, context):
     user_id = update.effective_message.from_user.id
     if is_user_admin(update.effective_chat, user_id):
         update.effective_message.reply_text("제가 그럴 수 있으면 좋겠네요... 그러나 당신은 관리자예요!")
@@ -235,10 +234,11 @@ def kickme(bot: Bot, update: Update):
 @can_restrict
 @user_admin
 @loggable
-def unban(bot: Bot, update: Update, args: List[str]) -> str:
+def unban(update: Update, context: CallbackContext) -> str:
     message = update.effective_message  # type: Optional[Message]
     user = update.effective_user  # type: Optional[User]
     chat = update.effective_chat  # type: Optional[Chat]
+    args = context.args
 
     user_id, reason = extract_user_and_text(message, args)
 
@@ -251,10 +251,9 @@ def unban(bot: Bot, update: Update, args: List[str]) -> str:
         if excp.message == "User not found":
             message.reply_text("해당 유저를 찾을 수 없어요!")
             return ""
-        else:
-            raise
+        raise
 
-    if user_id == bot.id:
+    if user_id == context.bot.id:
         message.reply_text("저는 절 Unban 할 수 없어요.")
         return ""
 

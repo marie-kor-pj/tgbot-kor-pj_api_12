@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from telegram import Message, Chat, Update, Bot, ParseMode
 from telegram.error import BadRequest
-from telegram.ext import CommandHandler, MessageHandler, Filters, run_async
+from telegram.ext import CommandHandler, MessageHandler, Filters, run_async, CallbackContext
 
 import tg_bot.modules.sql.blacklist_sql as sql
 from tg_bot import dispatcher, LOGGER
@@ -19,9 +19,10 @@ BASE_BLACKLIST_STRING = "현재 <b>Blacklisted</b> 에 추가된 단어들 :\n"
 
 
 @run_async
-def blacklist(bot: Bot, update: Update, args: List[str]):
+def blacklist(update: Update, context: CallbackContext):
     msg = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
+    args = context.args
 
     all_blacklisted = sql.get_chat_blacklist(chat.id)
 
@@ -44,7 +45,7 @@ def blacklist(bot: Bot, update: Update, args: List[str]):
 
 @run_async
 @user_admin
-def add_blacklist(bot: Bot, update: Update):
+def add_blacklist(update: Update, context):
     msg = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
     words = msg.text.split(None, 1)
@@ -68,7 +69,7 @@ def add_blacklist(bot: Bot, update: Update):
 
 @run_async
 @user_admin
-def unblacklist(bot: Bot, update: Update):
+def unblacklist(update: Update, context):
     msg = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
     words = msg.text.split(None, 1)
@@ -109,7 +110,7 @@ def unblacklist(bot: Bot, update: Update):
 
 @run_async
 @user_not_admin
-def del_blacklist(bot: Bot, update: Update):
+def del_blacklist(update: Update, context):
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
     to_match = extract_text(message)
@@ -161,8 +162,7 @@ BLACKLIST_HANDLER = DisableAbleCommandHandler("blacklist", blacklist, filters=Fi
                                               admin_ok=True)
 ADD_BLACKLIST_HANDLER = CommandHandler("addblacklist", add_blacklist, filters=Filters.group)
 UNBLACKLIST_HANDLER = CommandHandler(["unblacklist", "rmblacklist"], unblacklist, filters=Filters.group)
-BLACKLIST_DEL_HANDLER = MessageHandler(
-    (Filters.text | Filters.command | Filters.sticker | Filters.photo) & Filters.group, del_blacklist, edited_updates=True)
+BLACKLIST_DEL_HANDLER = MessageHandler((Filters.text | Filters.command | Filters.sticker | Filters.photo) & Filters.group, del_blacklist)
 
 dispatcher.add_handler(BLACKLIST_HANDLER)
 dispatcher.add_handler(ADD_BLACKLIST_HANDLER)

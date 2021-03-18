@@ -3,7 +3,7 @@ import re
 
 from feedparser import parse
 from telegram import ParseMode, constants
-from telegram.ext import CommandHandler, JobQueue
+from telegram.ext import CommandHandler, CallbackContext
 
 from tg_bot import dispatcher, updater
 from tg_bot.modules.helper_funcs.chat_status import user_admin
@@ -72,7 +72,8 @@ def list_urls(bot, update):
 
 
 @user_admin
-def add_url(bot, update, args):
+def add_url(update, context: CallbackContext):
+    args = context.args
     if len(args) >= 1:
         chat = update.effective_chat
 
@@ -106,7 +107,8 @@ def add_url(bot, update, args):
 
 
 @user_admin
-def remove_url(bot, update, args):
+def remove_url(update, context: CallbackContext):
+    args = context.args
     if len(args) >= 1:
         tg_chat_id = str(update.effective_chat.id)
 
@@ -129,7 +131,8 @@ def remove_url(bot, update, args):
         update.effective_message.reply_text("URL 누락")
 
 
-def rss_update(bot, job):
+def rss_update(context):
+    job = context.job
     user_data = sql.get_all()
 
     # 이 루프는 DB의 모든 행을 확인합니다.
@@ -166,26 +169,27 @@ def rss_update(bot, job):
                 final_message = "<b>{}</b>\n\n{}".format(html.escape(title), html.escape(link))
 
                 if len(final_message) <= constants.MAX_MESSAGE_LENGTH:
-                    bot.send_message(chat_id=tg_chat_id, text=final_message, parse_mode=ParseMode.HTML)
+                    context.bot.send_message(chat_id=tg_chat_id, text=final_message, parse_mode=ParseMode.HTML)
                 else:
-                    bot.send_message(chat_id=tg_chat_id, text="<b>위험:</b> 메시지가 너무 길어서 보낼 수 없어요.",
+                    context.bot.send_message(chat_id=tg_chat_id, text="<b>위험:</b> 메시지가 너무 길어서 보낼 수 없어요.",
                                      parse_mode=ParseMode.HTML)
         else:
             for link, title in zip(reversed(new_entry_links[-5:]), reversed(new_entry_titles[-5:])):
                 final_message = "<b>{}</b>\n\n{}".format(html.escape(title), html.escape(link))
 
                 if len(final_message) <= constants.MAX_MESSAGE_LENGTH:
-                    bot.send_message(chat_id=tg_chat_id, text=final_message, parse_mode=ParseMode.HTML)
+                    context.bot.send_message(chat_id=tg_chat_id, text=final_message, parse_mode=ParseMode.HTML)
                 else:
-                    bot.send_message(chat_id=tg_chat_id, text="<b>위험:</b> 메시지가 너무 길어서 보낼 수 없어요.",
+                    context.bot.send_message(chat_id=tg_chat_id, text="<b>위험:</b> 메시지가 너무 길어서 보낼 수 없어요.",
                                      parse_mode=ParseMode.HTML)
 
-            bot.send_message(chat_id=tg_chat_id, parse_mode=ParseMode.HTML,
+            context.bot.send_message(chat_id=tg_chat_id, parse_mode=ParseMode.HTML,
                              text="<b>위험:</b>{} 스팸을 방지하기 위해 발생이 누락되었어요."
                              .format(len(new_entry_links) - 5))
 
 
-def rss_set(bot, job):
+def rss_set(context):
+    job = context.job
     user_data = sql.get_all()
 
     # this loop checks for every row in the DB

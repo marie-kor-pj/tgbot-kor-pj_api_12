@@ -5,6 +5,7 @@ from telegram import Message, Update, Bot, User
 from telegram import ParseMode, MAX_MESSAGE_LENGTH
 from telegram.ext.dispatcher import run_async
 from telegram.utils.helpers import escape_markdown
+from telegram.ext import CallbackContext
 
 import tg_bot.modules.sql.userinfo_sql as sql
 from tg_bot import dispatcher, SUDO_USERS
@@ -13,12 +14,13 @@ from tg_bot.modules.helper_funcs.extraction import extract_user
 
 
 @run_async
-def about_me(bot: Bot, update: Update, args: List[str]):
+def about_me(update: Update, context: CallbackContext):
+    args = context.args
     message = update.effective_message  # type: Optional[Message]
     user_id = extract_user(message, args)
 
     if user_id:
-        user = bot.get_chat(user_id)
+        user = context.bot.get_chat(user_id)
     else:
         user = message.from_user
 
@@ -35,7 +37,7 @@ def about_me(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def set_about_me(bot: Bot, update: Update):
+def set_about_me(update: Update, context: CallbackContext):
     message = update.effective_message  # type: Optional[Message]
     user_id = message.from_user.id
     text = message.text
@@ -50,12 +52,13 @@ def set_about_me(bot: Bot, update: Update):
 
 
 @run_async
-def about_bio(bot: Bot, update: Update, args: List[str]):
+def about_bio(update: Update, context: CallbackContext):
+    args = context.args
     message = update.effective_message  # type: Optional[Message]
 
     user_id = extract_user(message, args)
     if user_id:
-        user = bot.get_chat(user_id)
+        user = context.bot.get_chat(user_id)
     else:
         user = message.from_user
 
@@ -72,7 +75,7 @@ def about_bio(bot: Bot, update: Update, args: List[str]):
 
 
 @run_async
-def set_about_bio(bot: Bot, update: Update):
+def set_about_bio(update: Update, context: CallbackContext):
     message = update.effective_message  # type: Optional[Message]
     sender = update.effective_user  # type: Optional[User]
     if message.reply_to_message:
@@ -81,7 +84,7 @@ def set_about_bio(bot: Bot, update: Update):
         if user_id == message.from_user.id:
             message.reply_text("자기 자신의 Bio 메시지를 설정할 수 없어요! 당신의 Bio 은(는) 다른 사람들의 마음대로입니다...")
             return
-        elif user_id == bot.id and sender.id not in SUDO_USERS:
+        elif user_id == context.bot.id and sender.id not in SUDO_USERS:
             message.reply_text("음... 저의 Bio 은(는) 오직 절 개발한 개발자만 설정할 수 있어요.")
             return
 

@@ -50,9 +50,9 @@ def is_user_in_chat(chat: Chat, user_id: int) -> bool:
 
 def bot_can_delete(func):
     @wraps(func)
-    def delete_rights(bot: Bot, update: Update, *args, **kwargs):
-        if can_delete(update.effective_chat, bot.id):
-            return func(bot, update, *args, **kwargs)
+    def delete_rights(update: Update, context, *args, **kwargs):
+        if can_delete(update.effective_chat, context.bot.id):
+            return func(update, context, *args, **kwargs)
         else:
             update.effective_message.reply_text("전 이곳에 있는 메시지를 지울 수 없어요! "
                                                 "제가 관리자인지 확인하고 다른 사용자의 메시지를 삭제할 수 있는지 확인하세요.")
@@ -62,9 +62,9 @@ def bot_can_delete(func):
 
 def can_pin(func):
     @wraps(func)
-    def pin_rights(bot: Bot, update: Update, *args, **kwargs):
-        if update.effective_chat.get_member(bot.id).can_pin_messages:
-            return func(bot, update, *args, **kwargs)
+    def pin_rights(update: Update, context, *args, **kwargs):
+        if update.effective_chat.get_member(context.bot.id).can_pin_messages:
+            return func(update, context, *args, **kwargs)
         else:
             update.effective_message.reply_text("전 이곳에 있는 메시지를 지울 수 없어요! "
                                                 "제가 관리자로 설정되어 있는지 확인해보세요!")
@@ -74,9 +74,9 @@ def can_pin(func):
 
 def can_promote(func):
     @wraps(func)
-    def promote_rights(bot: Bot, update: Update, *args, **kwargs):
-        if update.effective_chat.get_member(bot.id).can_promote_members:
-            return func(bot, update, *args, **kwargs)
+    def promote_rights(update: Update, context, *args, **kwargs):
+        if update.effective_chat.get_member(context.bot.id).can_promote_members:
+            return func(update, context, *args, **kwargs)
         else:
             update.effective_message.reply_text("저는 그들을 관리자로 임명하거나 일반 유저로 강등할 수 없어요! "
                                                 "제가 관리자이고, 관리자 임명 권한이 있는지 확인해 보세요!")
@@ -86,9 +86,9 @@ def can_promote(func):
 
 def can_restrict(func):
     @wraps(func)
-    def promote_rights(bot: Bot, update: Update, *args, **kwargs):
-        if update.effective_chat.get_member(bot.id).can_restrict_members:
-            return func(bot, update, *args, **kwargs)
+    def promote_rights(update: Update, context, *args, **kwargs):
+        if update.effective_chat.get_member(context.bot.id).can_restrict_members:
+            return func(update, context, *args, **kwargs)
         else:
             update.effective_message.reply_text("저는 여기 있는 사람들을 제한할 수 없어요! "
                                                 "제가 관리자이고, 관리자 임명 권한이 있는지 확인해 보세요!")
@@ -98,9 +98,9 @@ def can_restrict(func):
 
 def bot_admin(func):
     @wraps(func)
-    def is_admin(bot: Bot, update: Update, *args, **kwargs):
-        if is_bot_admin(update.effective_chat, bot.id):
-            return func(bot, update, *args, **kwargs)
+    def is_admin(update: Update, context, *args, **kwargs):
+        if is_bot_admin(update.effective_chat, context.bot.id):
+            return func(update, context, *args, **kwargs)
         else:
             update.effective_message.reply_text("전 관리자가 아니에요!")
 
@@ -109,10 +109,10 @@ def bot_admin(func):
 
 def user_admin(func):
     @wraps(func)
-    def is_admin(bot: Bot, update: Update, *args, **kwargs):
+    def is_admin(update: Update, context, *args, **kwargs):
         user = update.effective_user  # type: Optional[User]
         if user and is_user_admin(update.effective_chat, user.id):
-            return func(bot, update, *args, **kwargs)
+            return func(update, context, *args, **kwargs)
 
         elif not user:
             pass
@@ -128,10 +128,10 @@ def user_admin(func):
 
 def user_admin_no_reply(func):
     @wraps(func)
-    def is_admin(bot: Bot, update: Update, *args, **kwargs):
+    def is_admin(update: Update, context, *args, **kwargs):
         user = update.effective_user  # type: Optional[User]
         if user and is_user_admin(update.effective_chat, user.id):
-            return func(bot, update, *args, **kwargs)
+            return func(update, context, *args, **kwargs)
 
         elif not user:
             pass
@@ -144,9 +144,9 @@ def user_admin_no_reply(func):
 
 def user_not_admin(func):
     @wraps(func)
-    def is_not_admin(bot: Bot, update: Update, *args, **kwargs):
+    def is_not_admin(update: Update, context, *args, **kwargs):
         user = update.effective_user  # type: Optional[User]
         if user and not is_user_admin(update.effective_chat, user.id):
-            return func(bot, update, *args, **kwargs)
+            return func(context, update, *args, **kwargs)
 
     return is_not_admin

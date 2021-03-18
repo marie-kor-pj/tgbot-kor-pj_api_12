@@ -5,7 +5,7 @@ import telegram.ext as tg
 from telegram import Message, Chat, Update, Bot, ParseMode, User, MessageEntity
 from telegram import TelegramError
 from telegram.error import BadRequest
-from telegram.ext import CommandHandler, MessageHandler, Filters
+from telegram.ext import CommandHandler, MessageHandler, Filters, CallbackContext
 from telegram.ext.dispatcher import run_async
 from telegram.utils.helpers import mention_html
 
@@ -91,18 +91,19 @@ def unrestr_members(bot, chat_id, members, messages=True, media=True, other=True
 
 
 @run_async
-def locktypes(bot: Bot, update: Update):
+def locktypes(update: Update, context):
     update.effective_message.reply_text("\n - ".join(["Locks: "] + list(LOCK_TYPES) + list(RESTRICTION_TYPES)))
 
 
 @user_admin
 @bot_can_delete
 @loggable
-def lock(bot: Bot, update: Update, args: List[str]) -> str:
+def lock(update: Update, context: CallbackContext) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
-    if can_delete(chat, bot.id):
+    args = context.args
+    if can_delete(chat, context.bot.id):
         if len(args) >= 1:
             if args[0] in LOCK_TYPES:
                 sql.update_lock(chat.id, args[0], locked=True)
@@ -118,7 +119,7 @@ def lock(bot: Bot, update: Update, args: List[str]) -> str:
                 sql.update_restriction(chat.id, args[0], locked=True)
                 if args[0] == "previews":
                     members = users_sql.get_chat_members(str(chat.id))
-                    restr_members(bot, chat.id, members, messages=True, media=True, other=True)
+                    restr_members(context.bot, chat.id, members, messages=True, media=True, other=True)
 
                 message.reply_text("Locked {} for all non-admins!".format(args[0]))
                 return "<b>{}:</b>" \
@@ -138,10 +139,11 @@ def lock(bot: Bot, update: Update, args: List[str]) -> str:
 @run_async
 @user_admin
 @loggable
-def unlock(bot: Bot, update: Update, args: List[str]) -> str:
+def unlock(bot: Bot, update: Update, context: CallbackContext) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
+    args = context.args
     if is_user_admin(chat, message.from_user.id):
         if len(args) >= 1:
             if args[0] in LOCK_TYPES:
@@ -158,19 +160,19 @@ def unlock(bot: Bot, update: Update, args: List[str]) -> str:
                 """
                 members = users_sql.get_chat_members(chat.id)
                 if args[0] == "messages":
-                    unrestr_members(bot, chat.id, members, media=False, other=False, previews=False)
+                    unrestr_members(context.bot, chat.id, members, media=False, other=False, previews=False)
 
                 elif args[0] == "media":
-                    unrestr_members(bot, chat.id, members, other=False, previews=False)
+                    unrestr_members(context.bot, chat.id, members, other=False, previews=False)
 
                 elif args[0] == "other":
-                    unrestr_members(bot, chat.id, members, previews=False)
+                    unrestr_members(context.bot, chat.id, members, previews=False)
 
                 elif args[0] == "previews":
-                    unrestr_members(bot, chat.id, members)
+                    unrestr_members(context.bot, chat.id, members)
 
                 elif args[0] == "all":
-                    unrestr_members(bot, chat.id, members, True, True, True, True)
+                    unrestr_members(context.bot, chat.id, members, True, True, True, True)
                 """
                 message.reply_text("Unlocked {} for everyone!".format(args[0]))
 
@@ -183,24 +185,24 @@ def unlock(bot: Bot, update: Update, args: List[str]) -> str:
                 message.reply_text("무엇의 잠금을 해제하시려는 건가요...? 잠금 목록을 보기 위해 /locktypes 를 입력하세요")
 
         else:
-            bot.sendMessage(chat.id, "무엇의 잠금을 해제하시려는 건가요...?")
+            context.bot.sendMessage(chat.id, "무엇의 잠금을 해제하시려는 건가요...?")
 
     return ""
 
 
 @run_async
 @user_not_admin
-def del_lockables(bot: Bot, update: Update):
+def del_lockables(update: Update, context: CallbackContext):
     chat = update.effective_chat  # type: Optional[Chat]
     message = update.effective_message  # type: Optional[Message]
 
     for lockable, filter in LOCK_TYPES.items():
-        if filter(message) and sql.is_locked(chat.id, lockable) and can_delete(chat, bot.id):
+        if filter(message) and sql.is_locked(chat.id, lockable) and can_delete(chat, context.bot.id):
             if lockable == "bots":
                 new_members = update.effective_message.new_chat_members
                 for new_mem in new_members:
                     if new_mem.is_bot:
-                        if not is_bot_admin(chat, bot.id):
+                        if not is_bot_admin(chat, context.bot.id):
                             message.reply_text("다른 봇이 들어오려고 하네요... 들어오지 말라고 하고 싶지만... "
                                                "전 관리자가 아니에요!")
                             return
@@ -221,11 +223,11 @@ def del_lockables(bot: Bot, update: Update):
 
 @run_async
 @user_not_admin
-def rest_handler(bot: Bot, update: Update):
+def rest_handler(update: Update, context: CallbackContext):
     msg = update.effective_message  # type: Optional[Message]
     chat = update.effective_chat  # type: Optional[Chat]
     for restriction, filter in RESTRICTION_TYPES.items():
-        if filter(msg) and sql.is_restr_locked(chat.id, restriction) and can_delete(chat, bot.id):
+        if filter(msg) and sql.is_restr_locked(chat.id, restriction) and can_delete(chat, context.bot.id):
             try:
                 msg.delete()
             except BadRequest as excp:
@@ -272,7 +274,7 @@ def build_lock_message(chat_id):
 
 @run_async
 @user_admin
-def list_locks(bot: Bot, update: Update):
+def list_locks(update: Update, context):
     chat = update.effective_chat  # type: Optional[Chat]
 
     res = build_lock_message(chat.id)

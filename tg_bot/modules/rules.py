@@ -3,7 +3,7 @@ from typing import Optional
 from telegram import Message, Update, Bot, User
 from telegram import ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.error import BadRequest
-from telegram.ext import CommandHandler, run_async, Filters
+from telegram.ext import CommandHandler, run_async, Filters, CallbackContext
 from telegram.utils.helpers import escape_markdown
 
 import tg_bot.modules.sql.rules_sql as sql
@@ -53,7 +53,7 @@ def send_rules(update, chat_id, from_pm=False):
 
 @run_async
 @user_admin
-def set_rules(bot: Bot, update: Update):
+def set_rules(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     msg = update.effective_message  # type: Optional[Message]
     raw_text = msg.text
@@ -69,7 +69,7 @@ def set_rules(bot: Bot, update: Update):
 
 @run_async
 @user_admin
-def clear_rules(bot: Bot, update: Update):
+def clear_rules(update: Update, context: CallbackContext):
     chat_id = update.effective_chat.id
     sql.set_rules(chat_id, "")
     update.effective_message.reply_text("규칙을 성공적으로 제거했어요!")

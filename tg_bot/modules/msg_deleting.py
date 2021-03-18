@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from telegram import Message, Chat, Update, Bot, User
 from telegram.error import BadRequest
-from telegram.ext import CommandHandler, Filters
+from telegram.ext import CommandHandler, Filters, CallbackContext
 from telegram.ext.dispatcher import run_async
 from telegram.utils.helpers import mention_html
 
@@ -15,12 +15,13 @@ from tg_bot.modules.log_channel import loggable
 @run_async
 @user_admin
 @loggable
-def purge(bot: Bot, update: Update, args: List[str]) -> str:
+def purge(update: Update, context: CallbackContext) -> str:
+    args = context.args
     msg = update.effective_message  # type: Optional[Message]
     if msg.reply_to_message:
         user = update.effective_user  # type: Optional[User]
         chat = update.effective_chat  # type: Optional[Chat]
-        if can_delete(chat, bot.id):
+        if can_delete(chat, context.bot.id):
             message_id = msg.reply_to_message.message_id
             delete_to = msg.message_id - 1
             if args and args[0].isdigit():
@@ -30,10 +31,10 @@ def purge(bot: Bot, update: Update, args: List[str]) -> str:
                     delete_to = new_del
             for m_id in range(delete_to, message_id - 1, -1):  # Reverse iteration over message ids
                 try:
-                    bot.deleteMessage(chat.id, m_id)
+                    context.bot.deleteMessage(chat.id, m_id)
                 except BadRequest as err:
                     if err.message == "Message can't be deleted":
-                        bot.send_message(chat.id, "모든 메시지들을 제거할 수 없어요. 그 메시지들은 너무 오래되었어요. "
+                        context.bot.send_message(chat.id, "모든 메시지들을 제거할 수 없어요. 그 메시지들은 너무 오래되었어요. "
                                                   "저에게 삭제 권한이 없거나 슈퍼 그룹이 아닐 수 있어요.")
 
                     elif err.message != "Message to delete not found":
@@ -43,13 +44,13 @@ def purge(bot: Bot, update: Update, args: List[str]) -> str:
                 msg.delete()
             except BadRequest as err:
                 if err.message == "Message can't be deleted":
-                    bot.send_message(chat.id, "모든 메시지들을 제거할 수 없어요. 그 메시지들은 너무 오래되었어요. "
+                    context.bot.send_message(chat.id, "모든 메시지들을 제거할 수 없어요. 그 메시지들은 너무 오래되었어요. "
                                               "제게 삭제 권한이 없거나 슈퍼 그룹이 아닐 수 있어요.")
 
                 elif err.message != "Message to delete not found":
                     LOGGER.exception("채팅 메시지를 삭제하는 동안 오류가 발생했어요.")
 
-            bot.send_message(chat.id, "완벽하게 제거했어요!")
+            context.bot.send_message(chat.id, "완벽하게 제거했어요!")
             return "<b>{}:</b>" \
                    "\n#메시지_대량_제거" \
                    "\n<b>관리자:</b> {}" \
@@ -66,11 +67,11 @@ def purge(bot: Bot, update: Update, args: List[str]) -> str:
 @run_async
 @user_admin
 @loggable
-def del_message(bot: Bot, update: Update) -> str:
+def del_message(update: Update, context: CallbackContext) -> str:
     if update.effective_message.reply_to_message:
         user = update.effective_user  # type: Optional[User]
         chat = update.effective_chat  # type: Optional[Chat]
-        if can_delete(chat, bot.id):
+        if can_delete(chat, context.bot.id):
             update.effective_message.reply_to_message.delete()
             update.effective_message.delete()
             return "<b>{}:</b>" \

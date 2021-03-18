@@ -1,7 +1,7 @@
 # tgbot
 
 * 이 봇은 [Marie 봇](https://github.com/PaulSonOfLars/tgbot) 을 한글화한 봇의 텔레그램봇 마이그레이션 시도한 것입니다.
-* 레포 공개합니다. 또한 마이그레이션 작업 중단. 현재 **오류로 작동하지 않습니다**.
+* 마이그레이션 거의 완료. 귀찮아져서 잠시 중단. 현재 **오류로 일부 기능이 작동하지 않습니다**.
 * 공식 사이트 : [https://marie-kor-pj.github.io/](https://marie-kor-pj.github.io/)
 * 원본 봇은 [Marie](https://t.me/BanhammerMarie_bot) 입니다.
 * ~~원본 [Marie](https://t.me/BanhammerMarie_bot) 봇에 대한 궁금한 점은 [support group](https://t.me/MarieSupport) 에서 물어주세요.~~ - 채널 아카이브됨
